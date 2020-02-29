@@ -1,10 +1,10 @@
+import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
-import javax.swing.*;
 
-class CalcFrame extends JFrame
+class CalcFrame extends JFrame implements KeyListener, ActionListener
 {
 
 	private double	preResult;
@@ -13,15 +13,16 @@ class CalcFrame extends JFrame
 	private boolean	isMemoryFull;
 	private boolean	isDotPressed;
 	private String	currentOperation = "";
+	private final String[] allButtons = {"%", "\u02E3\u221A", "x\u02B8", "\u232B", "M+", "M-", "C", "\u00F7", "7", "8", "9", "\u00D7", "4", "5", "6", "-", "1", "2", "3", "+", "\u00B1", "0", ".", "="};
 
-	private DecimalFormat numberFormat = new DecimalFormat("#.##########");
-	private DecimalFormatSymbols decimalFormatSymbols = new DecimalFormatSymbols();
-	private Font regular = new Font("Arial", Font.PLAIN, 22);
-	private Font preBar = new Font("Impact", Font.PLAIN, 22);
-	private Font mainBar = new Font("Impact", Font.PLAIN, 45);
-	private JLabel preDisplay = new JLabel("\u0020");
-	private JTextField display = new JTextField("");
-	private JButton buttonZero = new JButton("0");
+	private DecimalFormat			numberFormat = new DecimalFormat("#.##########");
+	private DecimalFormatSymbols	decimalFormatSymbols = new DecimalFormatSymbols();
+	private Font					regular = new Font(Font.MONOSPACED, Font.PLAIN, 22);
+	private Font					mainBar = new Font(Font.MONOSPACED, Font.PLAIN, 45);
+	private JLabel					preDisplay = new JLabel("\u0020");
+	private JTextField				mainDisplay = new JTextField("");
+
+	private JButton button0 = new JButton("0");
 	private JButton buttonOne = new JButton("1");
 	private JButton buttonTwo = new JButton("2");
 	private JButton buttonThree = new JButton("3");
@@ -32,13 +33,13 @@ class CalcFrame extends JFrame
 	private JButton buttonEight = new JButton("8");
 	private JButton buttonNine = new JButton("9");
 	private JButton buttonPercent = new JButton("%");
-	private JButton buttonSquareRoot = new JButton("\u221A");
-	private JButton buttonPow = new JButton("X" + "\u00B2");
-	private JButton buttonBackspace = new JButton("<<");
+	private JButton buttonSquareRoot = new JButton("\u02E3\u221A");
+	private JButton buttonPow = new JButton("x\u02B8");
+	private JButton buttonBackspace = new JButton("\u232B");
 	private JButton buttonMemoryAdd = new JButton("M+");
 	private JButton buttonMemoryClear = new JButton("M-");
 	private JButton buttonCancel = new JButton("C");
-	private JButton buttonDivision = new JButton("/");
+	private JButton buttonDivision = new JButton("\u00F7");
 	private JButton buttonMultiplication = new JButton("\u00D7");
 	private JButton buttonMinus = new JButton("-");
 	private JButton buttonPlus = new JButton("+");
@@ -46,6 +47,7 @@ class CalcFrame extends JFrame
 	private JButton buttonDot = new JButton(".");
 	private JButton buttonResult = new JButton("=");
 
+	JPanel pane = new JPanel();
 
 	CalcFrame()
 	{
@@ -57,13 +59,12 @@ class CalcFrame extends JFrame
 
 		decimalFormatSymbols.setDecimalSeparator('.');
 		numberFormat.setDecimalFormatSymbols(decimalFormatSymbols);
+		preDisplay.setFont(regular);
 
-		preDisplay.setFont(preBar);
+		mainDisplay.setHorizontalAlignment(JTextField.RIGHT);
+		mainDisplay.setFont(mainBar);
 
-		display.setHorizontalAlignment(JTextField.RIGHT);
-		display.setFont(mainBar);
-
-		buttonZero.setFont(regular);
+		button0.setFont(regular);
 		buttonOne.setFont(regular);
 		buttonTwo.setFont(regular);
 		buttonThree.setFont(regular);
@@ -88,41 +89,35 @@ class CalcFrame extends JFrame
 		buttonDot.setFont(regular);
 		buttonResult.setFont(regular);
 
-		JPanel pane = new JPanel();
 		GridBagLayout layout = new GridBagLayout();
 		pane.setLayout(layout);
 
 		GridBagConstraints placing = new GridBagConstraints();
-		layout.setConstraints(display, placing);
+		layout.setConstraints(mainDisplay, placing);
 
-		placing.insets = new Insets(5, 5, 5, 5);
+		placing.insets = new Insets(0, 0, 0, 0);
 		placing.fill = GridBagConstraints.BOTH;
-		placing.weightx = 0.25;
 
 		placing.gridx = 0;                                  //
 		placing.gridy = 0;                                  //
 		placing.gridheight = 1;                             //
+		placing.weightx = 0.25;
+		placing.weighty = 0.01;
 		placing.gridwidth = GridBagConstraints.REMAINDER;   //Верхний бар с предв. расчетом
 		preDisplay.setHorizontalAlignment(JLabel.RIGHT);     //
 		pane.add(preDisplay, placing);                       //
 
 		placing.gridx = 0;
 		placing.gridy = 1;                                  //
-		display.setEditable(false);                       //Основное поле
-		display.setBorder(BorderFactory.createEtchedBorder());
-		pane.add(display, placing);                       //
+		mainDisplay.setEditable(false);                       //Основное поле
+		mainDisplay.setBorder(BorderFactory.createEtchedBorder());
+		pane.add(mainDisplay, placing);                       //
 
-		placing.weighty = 0.01;
 		placing.gridx = 0;                                  //Первый ряд кнопок
 		placing.gridy = 2;                                  //
 		placing.gridwidth = 1;                              //
 		pane.add(buttonPercent, placing);                   //Проценты
-		buttonPercent.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e) {
-				simpleOperation("%");
-			}
-		});
+		buttonPercent.addActionListener(this);
 
 		placing.gridx = 1;                                  //
 		pane.add(buttonSquareRoot, placing);                 //Кв корень
@@ -308,8 +303,8 @@ class CalcFrame extends JFrame
 		});
 		//
 		placing.gridx = 1;                                  //
-		pane.add(buttonZero, placing);                      //Цифра 0
-		buttonZero.addActionListener(new ActionListener() {
+		pane.add(button0, placing);                      //Цифра 0
+		button0.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				digit(0);
@@ -338,231 +333,194 @@ class CalcFrame extends JFrame
 		setContentPane(pane);
 	}
 
+	@Override
+	public void actionPerformed(ActionEvent actionEvent) {
+		simpleOperation("%");
+	}
 
-	private void digit(int digit) {
-		switch (digit) {
-			case 0:
-				if (nullDisplay() || "0".equals(display.getText())) {
-					display.setText("0");
-				} else {
-					display.setText(display.getText() + "0");
-				}
-				break;
-			case 1:
-				if ("0".equals(display.getText())) {
-					display.setText("0.1");
-					isDotPressed = true;
-				} else {
-					display.setText(display.getText() + "1");
-				}
-				break;
-			case 2:
-				if ("0".equals(display.getText())) {
-					display.setText("0.2");
-					isDotPressed = true;
-				} else {
-					display.setText(display.getText() + "2");
-				}
-				break;
-			case 3:
-				if ("0".equals(display.getText())) {
-					display.setText("0.3");
-					isDotPressed = true;
-				} else {
-					display.setText(display.getText() + "3");
-				}
-				break;
-			case 4:
-				if ("0".equals(display.getText())) {
-					display.setText("0.4");
-					isDotPressed = true;
-				} else {
-					display.setText(display.getText() + "4");
-				}
-				break;
-			case 5:
-				if ("0".equals(display.getText())) {
-					display.setText("0.5");
-					isDotPressed = true;
-				} else {
-					display.setText(display.getText() + "5");
-				}
-				break;
-			case 6:
-				if ("0".equals(display.getText())) {
-					display.setText("0.6");
-					isDotPressed = true;
-				} else {
-					display.setText(display.getText() + "6");
-				}
-				break;
-			case 7:
-				if ("0".equals(display.getText())) {
-					display.setText("0.7");
-					isDotPressed = true;
-				} else {
-					display.setText(display.getText() + "7");
-				}
-				break;
-			case 8:
-				if ("0".equals(display.getText())) {
-					display.setText("0.8");
-					isDotPressed = true;
-				} else {
-					display.setText(display.getText() + "8");
-				}
-				break;
-			case 9:
-				if ("0".equals(display.getText())) {
-					display.setText("0.9");
-					isDotPressed = true;
-				} else {
-					display.setText(display.getText() + "9");
-				}
-				break;
+	@Override
+	public void keyTyped(KeyEvent keyEvent) {
+
+	}
+
+	@Override
+	public void keyPressed(KeyEvent keyEvent) {
+
+	}
+
+	@Override
+	public void keyReleased(KeyEvent keyEvent) {
+
+	}
+
+	private void digit(int digit)
+	{
+		if (digit == 0)
+		{
+			if (mainDisplay.getText().isEmpty() || "0".equals(mainDisplay.getText()))
+				mainDisplay.setText("0");
+			else
+				mainDisplay.setText(mainDisplay.getText() + "0");
+		}
+		else
+		{
+			if ("0".equals(mainDisplay.getText()))
+			{
+				mainDisplay.setText(Double.toString((double)digit / 10));
+				isDotPressed = true;
+			}
+			else
+				mainDisplay.setText(mainDisplay.getText() + digit);
 		}
 	}
 
-	private void clear() {
-		display.setText("");
+	private void clear()
+	{
+		mainDisplay.setText("");
 		preDisplay.setText("\u0020");
 		isReadyForCalc = false;
 		isDotPressed = false;
 	}
 
-	private void simpleOperation(String operation) {
-
-		if (!nullDisplay()) {
+	private void simpleOperation(String operation)
+	{
+		if (!mainDisplay.getText().isEmpty())
+		{
 			isDotPressed = false;
 			currentOperation = operation;
-
-			if (!isReadyForCalc) {
-				preResult = Double.parseDouble(display.getText());
+			if (!isReadyForCalc)
+			{
+				preResult = Double.parseDouble(mainDisplay.getText());
 				isReadyForCalc = true;
 			}
-
-			if ("%".equals(operation)) {
+			if ("%".equals(operation))
 				preDisplay.setText(operation + numberFormat.format(preResult));
-			} else {
+			else
 				preDisplay.setText(numberFormat.format(preResult) + " " + operation);
-			}
-
-			display.setText("");
+			mainDisplay.setText("");
 		}
-
 	}
 
-	private void instantOperation(String operation) {
-		if (!nullDisplay()) {
-
-			double temp = Double.parseDouble(display.getText());
-
-			switch (operation) {
+	private void instantOperation(String operation)
+	{
+		if (!mainDisplay.getText().isEmpty())
+		{
+			double temp = Double.parseDouble(mainDisplay.getText());
+			switch (operation)
+			{
 				case "\u221A":
-					if (temp > 0) {
-						display.setText(numberFormat.format(Math.sqrt(temp)));
-						break;
-					} else {
+					if (temp > 0)
+						mainDisplay.setText(numberFormat.format(Math.sqrt(temp)));
+					else
+					{
 						clear();
 						warning("Нельзя извлечь квадратный корень из отрицательного числа!");
-						break;
 					}
+					break;
 				case "\u00B2":
-					display.setText(numberFormat.format(Math.pow(temp, 2)));
+					mainDisplay.setText(numberFormat.format(Math.pow(temp, 2)));
 					break;
 			}
-
-			if (isDotPressed()) isDotPressed = true;
-
+			if (isDotPressed())
+				isDotPressed = true;
 		}
 	}
 
-	private boolean isDotPressed() {
-		char[] displayArray = display.getText().toCharArray();
-
-		for (char c : displayArray) {
-			if (c == '.') {
+	private boolean isDotPressed()
+	{
+		char[] displayArray = mainDisplay.getText().toCharArray();
+		for (char c : displayArray)
+		{
+			if (c == '.')
 				return true;
-			}
 		}
-
 		return false;
 	}
 
-	private void result() {
-		if (isReadyForCalc && !nullDisplay()) {
-			double multipler = Double.parseDouble(display.getText());
+	private void result()
+	{
+		if (isReadyForCalc && !mainDisplay.getText().isEmpty())
+		{
+			double multiplier = Double.parseDouble(mainDisplay.getText());
 			clear();
-			switch (currentOperation) {
+			switch (currentOperation)
+			{
 				case "%":
-					display.setText(numberFormat.format(preResult / 100 * multipler));
+					mainDisplay.setText(numberFormat.format(preResult / 100 * multiplier));
 					break;
 				case "/":
-					if (multipler != 0) {
-						display.setText(numberFormat.format(preResult / multipler));
+					if (multiplier != 0)
+					{
+						mainDisplay.setText(numberFormat.format(preResult / multiplier));
 						break;
-					} else {
+					}
+					else
+					{
 						clear();
 						warning("На ноль делить нельзя!");
 						break;
 					}
 				case "\u00D7":
-					display.setText(numberFormat.format(preResult * multipler));
+					mainDisplay.setText(numberFormat.format(preResult * multiplier));
 					break;
 				case "-":
-					display.setText(numberFormat.format(preResult - multipler));
+					mainDisplay.setText(numberFormat.format(preResult - multiplier));
 					break;
 				case "+":
-					display.setText(numberFormat.format(preResult + multipler));
+					mainDisplay.setText(numberFormat.format(preResult + multiplier));
 					break;
 			}
-
 			if (isDotPressed()) isDotPressed = true;
-
 		}
 	}
 
-	private void dot() {
-		if (!isDotPressed && !nullDisplay() && !".".equals(display.getText().substring(display.getText().length() - 1))) {
-			display.setText(display.getText() + ".");
+	private void dot()
+	{
+		if (!isDotPressed
+		&& !mainDisplay.getText().isEmpty()
+		&& !".".equals(mainDisplay.getText().substring(mainDisplay.getText().length() - 1)))
+		{
+			mainDisplay.setText(mainDisplay.getText() + ".");
 			isDotPressed = true;
 		}
 	}
 
-	private void negative() {
-		if (!nullDisplay()) {
-			double temp = Double.parseDouble(display.getText()) * -1;
-			display.setText(numberFormat.format(temp));
+	private void negative()
+	{
+		if (!mainDisplay.getText().isEmpty())
+		{
+			double temp = Double.parseDouble(mainDisplay.getText()) * -1;
+			mainDisplay.setText(numberFormat.format(temp));
 		}
 	}
 
-	private void memoryAdd() {
-		if (isMemoryFull) {
-			if (!((memory == Math.floor(memory)) && !Double.isInfinite(memory))) {
+	private void memoryAdd()
+	{
+		if (isMemoryFull)
+		{
+			if (!((memory == Math.floor(memory)) && !Double.isInfinite(memory)))
 				isDotPressed = true;
-			}
-			display.setText(String.valueOf(numberFormat.format(memory)));
-		} else if (!nullDisplay()) {
+			mainDisplay.setText(String.valueOf(numberFormat.format(memory)));
+		}
+		else if (!mainDisplay.getText().isEmpty())
+		{
 			isMemoryFull = true;
-			memory = Double.parseDouble(display.getText());
+			memory = Double.parseDouble(mainDisplay.getText());
 		}
 	}
 
-	private void backspace() {
-		if (!nullDisplay()) {
-			if (".".equals(display.getText().substring(display.getText().length() - 1))) {
+	private void backspace()
+	{
+		if (!mainDisplay.getText().isEmpty())
+		{
+			if (".".equals(mainDisplay.getText().substring(mainDisplay.getText().length() - 1)))
 				isDotPressed = false;
-			}
-			display.setText(display.getText().substring(0, display.getText().length() - 1));
+			mainDisplay.setText(mainDisplay.getText().substring(0, mainDisplay.getText().length() - 1));
 		}
 	}
 
-	private void warning(String message) {
-
+	private void warning(String message)
+	{
 		JOptionPane.showMessageDialog(null, message, "Ошибка!", JOptionPane.INFORMATION_MESSAGE);
-	}
-
-	private boolean nullDisplay() {
-		return "".equals(display.getText());
 	}
 }
